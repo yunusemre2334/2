@@ -1,0 +1,79 @@
+import cv2
+
+
+# ROI koordinatları (x,y,w,h)
+roi = (100, 100, 600, 600)
+
+# Boyut filtresi (en küçük boyut)
+min_area = 20
+max_area = 30
+
+# Video yakalayıcısını başlat
+cap = cv2.VideoCapture("H:/Desktop/traffic.avi")
+
+# Tracker'ı başlat
+tracker = cv2.createBackgroundSubtractorMOG2()
+
+
+# Cisim sayacı
+sayac = 0
+
+while True:
+    ret, frame = cap.read()
+
+    if not ret:
+        break
+
+    # ROI'yi belirtilen koordinatlara göre ayarla
+    x, y, w, h = roi
+    roi_frame = frame[y:y+h, x:x+w]
+
+    # Gri tonlamalı görüntü oluştur
+    gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
+
+    # Gürültüyü azaltmak için Gauss filtresi uygula
+    blurred_frame = cv2.GaussianBlur(gray_frame, (7, 7), 0)
+
+    # Canny kenar tespiti uygula
+    canny_frame = cv2.Canny(blurred_frame, 50, 150)
+
+    # Kontürleri bul
+    contours, _ = cv2.findContours(canny_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Tüm kontürleri döngüye al
+    for contour in contours:
+        # Kontürün alanını hesapla
+            area = cv2.contourArea(contour)
+
+        # Alan, min_area'dan büyük olduğunda işleme devam et
+            # Çerçeveyi sınırlayacak dikdörtgen koordinatlarını hesapla
+            
+            if 25<area<45:
+                (x, y, w, h) = cv2.boundingRect(contour)
+                sayac+=1
+
+            # Cisim sayacını artır
+            
+
+            # Cisim sayısını görüntü üzerinde yazdır
+            cv2.putText(frame, f"Sayim Islemi: {sayac}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+            # Cisimlerin üzerine dikdörtgen kutu çiz
+            cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            
+            
+            
+
+    # ROI'ye çizilen dikdörtgeni görüntü üzerinde göster
+    cv2.imshow("ROI", roi_frame)
+
+    # Genel video akışını göster
+    cv2.imshow("Video", frame)
+
+    # 'q' tuşuna basıldığında döngüyü sonlandır
+    if cv2.waitKey(40) == ord('q'):
+        break
+
+# Video yakalayıcısını ve tüm pencereleri serbest bırak
+cap.release()
+cv2.destroyAllWindows()
